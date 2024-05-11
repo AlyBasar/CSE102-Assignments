@@ -1,0 +1,11 @@
+100,Oil,5kg,25
+101,Milk,1kg,30
+102,Milk,200ml,50
+103,Egg,10 pieces,24
+104,Cottage Cheese, 200 gr,15
+200,Lavender Liquid Soap,1 kg, 10
+201,Rose Liquid Soap,1kg, 12
+202,Dalin Shampoo, 400gr, 8
+203,Dalin Shampoo, 600gr, 12
+204,Omo Washing Powder, 7kg,26
+205,Finish Dishwasher Detergent,78 pieces, 18
