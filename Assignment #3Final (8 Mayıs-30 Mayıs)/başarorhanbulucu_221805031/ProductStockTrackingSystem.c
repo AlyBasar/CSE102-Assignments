@@ -28,14 +28,14 @@ int main(void)
     char *token;
     int choice = 0;
 
-    fp = fopen(filename, "r");
+    fp = fopen(filename, "r+");
     if (fp == NULL)
     {
         printf("Error: could not open file %s\n", filename);
         return 1;
     }
 
-    while (fgets(line, 200, fp) != NULL)
+    while (fgets(line, 200, fp) != NULL) // num_products hesaplama
     {
         token = strtok(line, ",");
         products[num_products].id = atoi(token);
@@ -46,7 +46,6 @@ int main(void)
         token = strtok(NULL, ",");
         products[num_products].quantity = atoi(token);
         token = strtok(NULL, ",");
-        // printf("%d,%s,%s,%d\n",products[num_products].id,products[num_products].name, products[num_products].unit, products[num_products].quantity);
         num_products++;
     }
 
@@ -54,41 +53,79 @@ int main(void)
     {
         ui();
         scanf("%d", &choice);
+        getchar();
 
         switch (choice)
         {
         case 1: // Add a product
         {
-            int id, quantity;
-            char productname[50], unit[20];
+            int kontrol = 0, i, id, quantity;
+            char productname[100], unit[50];
 
             printf("\n=============Add a product=============\n");
-            printf("Enter product ID: ");
-            scanf("%d", &id);
+            while (!kontrol) // hali hazırda bulunan bir id girilirse uyarı ver
+            {
+                printf("Enter product ID: ");
+                scanf("%d", &id);
+                getchar();
+
+                kontrol = 1;
+
+                for (i = 0; i < num_products; i++)
+                {
+                    if (products[i].id == id)
+                    {
+                        kontrol = 0;
+                        printf("A product with ID %d already exists.\n\n", id);
+                        break;
+                    }
+                }
+            }
             printf("Enter name of the product: ");
-            scanf("%s", &productname);
+            fgets(productname, sizeof(productname), stdin);
+            productname[strcspn(productname, "\n")] = '\0'; // \n karakterini kaldır
             printf("Enter the unit: ");
-            scanf("%s", &unit);
+            fgets(unit, sizeof(unit), stdin);
+            unit[strcspn(unit, "\n")] = '\0'; // \n karakterini kaldır
             printf("Enter the quantity: ");
             scanf("%d", &quantity);
 
-            //! product ekleme yapılacak
+            fseek(fp, 0, SEEK_END); // dosya sonuna git
+            fprintf(fp, "%d,%s,%s,%d\n", id, productname, unit, quantity);
+            num_products++;
 
             printf("\n      |Product added succesfully|\n\n");
             break;
         }
-        case 2: // Update a product
+        case 2: // t Update a product
         {
-            int uchoice = 0, id, quantity;
+            int uchoice = 0, i, found = 0, id, quantity;
             char productname[50], unit[20];
 
             printf("\n===========Update a product============\n");
-            printf("Enter product ID to update: ");
-            scanf("%d", &id);
 
-            //! verilen id li product bulunacak(eğer bulunamazsa uyarılacak)
+            while (!found)
+            {
+                printf("Enter product ID to update: ");
+                scanf("%d", &id);
 
-            printf("Product found. Which field would you like to update?");
+                for (i = 0; i < num_products; i++)
+                {
+                    if (products[i].id == id)
+                    {
+                        id = i;
+                        printf("Product found. Which field would you like to update?");
+                        found = 1; // id bulundu
+                        break;
+                    }
+                    else
+                    {
+                        printf("Product with ID %d not found.\n\n", id);
+                        break;
+                    }
+                }
+            }
+
             while (uchoice != 5)
             {
                 printf("\n1. ID\n2. Name\n3. Unit\n4. Quantity\n5. Exit\nEnter your choice (1-5):");
@@ -105,14 +142,14 @@ int main(void)
                     break;
                 case 2:
                     printf("Enter new name: ");
-                    scanf("%s", &productname);
+                    scanf("%s", productname);
                     //! name update edilecek
                     printf("     |Product updated succesfully|\n\n");
                     uchoice = 5;
                     break;
                 case 3:
                     printf("Enter new unit: ");
-                    scanf("%s", &unit);
+                    scanf("%s", unit);
                     //! unit update edilecek
                     printf("     |Product updated succesfully|\n\n");
                     uchoice = 5;
@@ -134,23 +171,50 @@ int main(void)
             }
             break;
         }
-        case 3: // Search for a product with name
+        case 3: // t Search for a product with name
         {
+            int i, kontrol = 0, found = 0;
             char productname[50];
 
-            printf("\n=====Search for a product with name====\n");
-            printf("Enter name of the product: ");
-            scanf("%s", &productname);
+            printf("\n=====Search for a product with name====");
+
+            while (!kontrol)
+            {
+                printf("\nEnter name of the product: ");
+                fgets(productname, sizeof(productname), stdin);
+                productname[strcspn(productname, "\n")] = '\0'; // Satır sonu karakterini kaldır
+
+                for (int i = 0; i < num_products; i++)
+                {
+                    if (strcmp(products[i].name, productname) == 0)
+                    {
+                        if (!found)
+                        {
+                            printf("      |Products from %s|\n", productname);
+                            found = 1;
+                        }
+                        printf("%-5d %-30s %-13s %-10d\n", products[i].id, products[i].name, products[i].unit, products[i].quantity);
+                    }
+                }
+
+                if (!found)
+                { // Eğer hiçbir ürün bulunamadıysa
+                    printf("The product %s does not exist.\n", productname);
+                }
+                else
+                {
+                    kontrol = 1;
+                    printf("\n");
+                }
+            }
 
             //! eğer name bulunamazsa tekrar istenecek
-
-            printf("      |Products from %s|\n", productname);
 
             //! seçilen product listelenecek
 
             break;
         }
-        case 4: // Increase quantity of a product
+        case 4: // t Increase quantity of a product
         {
             int id, quantity;
 
@@ -168,7 +232,7 @@ int main(void)
             // printf("   |New quantity of %s = %d|\n", productname, newquantity);
             break;
         }
-        case 5: // Decrese quantity of a product
+        case 5: // t Decrese quantity of a product
         {
             int id, quantity;
 
@@ -188,7 +252,23 @@ int main(void)
         }
         case 6: // List all products
         {
-            //! tüm productlar listelenecek
+            fseek(fp, 0, SEEK_SET); // dosya başına git
+            printf("  ID    Product Name                   Unit          Quantity\n");
+            while (fgets(line, 200, fp) != NULL)
+            {
+                token = strtok(line, ",");
+                products[num_products].id = atoi(token);
+                token = strtok(NULL, ",");
+                strcpy(products[num_products].name, token);
+                token = strtok(NULL, ",");
+                strcpy(products[num_products].unit, token);
+                token = strtok(NULL, ",");
+                products[num_products].quantity = atoi(token);
+                token = strtok(NULL, ",");
+                printf("  %-5d %-30s %-13s %-10d\n", products[num_products].id, products[num_products].name, products[num_products].unit, products[num_products].quantity);
+                num_products++;
+            }
+            printf("\n");
             break;
         }
         case 7: // Exit
