@@ -53,7 +53,7 @@ int main(void)
     {
         ui();
         scanf("%d", &choice);
-        getchar();
+        getchar(); // \n karakterini kaldır
 
         switch (choice)
         {
@@ -99,23 +99,32 @@ int main(void)
         }
         case 2: // t Update a product
         {
-            int uchoice = 0, i, found = 0, id, quantity;
+            int uchoice = 0, i, kontrol = 0, update_id, id, quantity;
             char productname[50], unit[20];
+
+            fseek(fp, 0, SEEK_SET); // dosya başına git
+
+            FILE *temp_fp; // geçici temp dosyası oluştur
+            temp_fp = fopen("temp.txt", "w+");
+            if (temp_fp == NULL)
+            {
+                printf("Error: could not open file %s\n", filename);
+                return 1;
+            }
 
             printf("\n===========Update a product============\n");
 
-            while (!found)
+            while (!kontrol)
             {
                 printf("Enter product ID to update: ");
-                scanf("%d", &id);
+                scanf("%d", &update_id);
 
                 for (i = 0; i < num_products; i++)
                 {
-                    if (products[i].id == id)
+                    if (products[i].id == update_id)
                     {
-                        id = i;
                         printf("Product found. Which field would you like to update?");
-                        found = 1; // id bulundu
+                        kontrol = 1; // id bulundu
                         break;
                     }
                     else
@@ -130,48 +139,125 @@ int main(void)
             {
                 printf("\n1. ID\n2. Name\n3. Unit\n4. Quantity\n5. Exit\nEnter your choice (1-5):");
                 scanf("%d", &uchoice);
+                getchar();
 
                 switch (uchoice)
                 {
-                case 1:
+                case 1: // id update
+                {
                     printf("Enter new ID: ");
                     scanf("%d", &id);
-                    //! id update edilecek
+
+                    for (i = 0; i < num_products; i++)
+                    {
+                        if (products[i].id == update_id)
+                        {
+                            fprintf(temp_fp, "%d,%s,%s,%d\n", id, products[i].name, products[i].unit, products[i].quantity);
+                        }
+                        else
+                        {
+                            fprintf(temp_fp, "%d,%s,%s,%d\n", products[i].id, products[i].name, products[i].unit, products[i].quantity);
+                        }
+                    }
+
                     printf("     |Product updated succesfully|\n\n");
                     uchoice = 5;
                     break;
-                case 2:
+                }
+                case 2: // name update
+                {
                     printf("Enter new name: ");
-                    scanf("%s", productname);
-                    //! name update edilecek
+                    fgets(productname, sizeof(productname), stdin);
+                    productname[strcspn(productname, "\n")] = '\0'; // \n karakterini kaldır
+
+                    for (i = 0; i < num_products; i++)
+                    {
+                        if (products[i].id == update_id)
+                        {
+                            fprintf(temp_fp, "%d,%s,%s,%d\n", products[i].id, productname, products[i].unit, products[i].quantity);
+                        }
+                        else
+                        {
+                            fprintf(temp_fp, "%d,%s,%s,%d\n", products[i].id, products[i].name, products[i].unit, products[i].quantity);
+                        }
+                    }
+
                     printf("     |Product updated succesfully|\n\n");
                     uchoice = 5;
                     break;
-                case 3:
+                }
+                case 3: // unit update
+                {
                     printf("Enter new unit: ");
-                    scanf("%s", unit);
-                    //! unit update edilecek
+                    fgets(unit, sizeof(unit), stdin);
+                    unit[strcspn(unit, "\n")] = '\0'; // \n karakterini kaldır
+                    for (i = 0; i < num_products; i++)
+                    {
+                        if (products[i].id == update_id)
+                        {
+                            fprintf(temp_fp, "%d,%s,%s,%d\n", products[i].id, products[i].name, unit, products[i].quantity);
+                        }
+                        else
+                        {
+                            fprintf(temp_fp, "%d,%s,%s,%d\n", products[i].id, products[i].name, products[i].unit, products[i].quantity);
+                        }
+                    }
+
                     printf("     |Product updated succesfully|\n\n");
                     uchoice = 5;
                     break;
-                case 4:
+                }
+                case 4: // quantity update
+                {
                     printf("Enter new quantity: ");
-                    scanf("%d", quantity);
-                    //! quantity update edilecek
+                    scanf("%d", &quantity);
+
+                    for (i = 0; i < num_products; i++)
+                    {
+                        if (products[i].id == update_id)
+                        {
+                            fprintf(temp_fp, "%d,%s,%s,%d\n", products[i].id, products[i].name, products[i].unit, quantity);
+                        }
+                        else
+                        {
+                            fprintf(temp_fp, "%d,%s,%s,%d\n", products[i].id, products[i].name, products[i].unit, products[i].quantity);
+                        }
+                    }
+
                     printf("     |Product updated succesfully|\n\n");
                     uchoice = 5;
                     break;
+                }
                 case 5:
+                {
                     printf("Closing the update screen...\n\n");
                     break;
+                }
                 default:
                     printf("Invalid choice!\n");
                     break;
                 }
             }
+
+            fclose(temp_fp); // geçici dosyayı kapat
+            fclose(fp);      // orijinal dosyayı kapat
+
+            if (rename("temp.txt", "products.txt") != 0) // geçici temp dosyasının ismini değiştir
+            {
+                printf("Error: could not rename file\n");
+                return 1;
+            }
+
+            fp = fopen(filename, "r+"); // asıl dosyayı tekrar aç
+            if (fp == NULL)
+            {
+                printf("Error: could not open file %s\n", filename);
+                return 1;
+            }
+
             break;
         }
-        case 3: // t Search for a product with name
+        case 3: // Search for a product with name
         {
             int i, kontrol = 0, found = 0;
             char productname[50];
@@ -182,7 +268,7 @@ int main(void)
             {
                 printf("\nEnter name of the product: ");
                 fgets(productname, sizeof(productname), stdin);
-                productname[strcspn(productname, "\n")] = '\0'; // Satır sonu karakterini kaldır
+                productname[strcspn(productname, "\n")] = '\0'; // \n karakterini kaldır
 
                 for (int i = 0; i < num_products; i++)
                 {
@@ -193,7 +279,7 @@ int main(void)
                             printf("      |Products from %s|\n", productname);
                             found = 1;
                         }
-                        printf("%-5d %-30s %-13s %-10d\n", products[i].id, products[i].name, products[i].unit, products[i].quantity);
+                        printf("%d      %s      %s      %d\n", products[i].id, products[i].name, products[i].unit, products[i].quantity);
                     }
                 }
 
@@ -207,11 +293,6 @@ int main(void)
                     printf("\n");
                 }
             }
-
-            //! eğer name bulunamazsa tekrar istenecek
-
-            //! seçilen product listelenecek
-
             break;
         }
         case 4: // t Increase quantity of a product
